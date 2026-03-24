@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบข้อสอบ — คำนามภาษาอังกฤษ</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+:root {
+  --primary: #fb2883;
+  --primary-light: #fd6aab;
+  --primary-dark: #d91e70;
+  --bg: #fbf5ea;
+  --bg2: #f5ede0;
+  --shadow-light: #ffffff;
+  --shadow-dark: #e8d8c4;
+  --text: #3a2a2a;
+  --text-muted: #8a7a7a;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warning: #f97316;
+  --card-bg: #fbf5ea;
+  --border: #e8d8c4;
+}
+.theme-green {
+  --primary: #16a34a;
+  --primary-light: #4ade80;
+  --primary-dark: #15803d;
+  --bg: #f0fdf4;
+  --bg2: #dcfce7;
+  --shadow-light: #ffffff;
+  --shadow-dark: #bbf7d0;
+  --card-bg: #f0fdf4;
+  --border: #bbf7d0;
+}
+.theme-blue {
+  --primary: #2563eb;
+  --primary-light: #60a5fa;
+  --primary-dark: #1d4ed8;
+  --bg: #eff6ff;
+  --bg2: #dbeafe;
+  --shadow-light: #ffffff;
+  --shadow-dark: #bfdbfe;
+  --card-bg: #eff6ff;
+  --border: #bfdbfe;
+}
+.theme-purple {
+  --primary: #9333ea;
+  --primary-light: #c084fc;
+  --primary-dark: #7e22ce;
+  --bg: #faf5ff;
+  --bg2: #f3e8ff;
+  --shadow-light: #ffffff;
+  --shadow-dark: #e9d5ff;
+  --card-bg: #faf5ff;
+  --border: #e9d5ff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Kanit', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+.neu {
+  background: var(--card-bg);
+  border-radius: 16px;
+  box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+}
+.neu-inset {
+  background: var(--bg2);
+  border-radius: 12px;
+  box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+}
+.neu-btn {
+  background: var(--card-bg);
+  border: none;
+  border-radius: 12px;
+  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+  cursor: pointer;
+  font-family: 'Kanit', sans-serif;
+  font-size: 15px;
+  color: var(--text);
+  transition: all 0.15s ease;
+  padding: 10px 20px;
+}
+.neu-btn:hover { box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light); transform: translateY(-1px); }
+.neu-btn:active { box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light); transform: translateY(0); }
+.neu-btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+}
+.neu-btn-primary:hover { box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light); filter: brightness(1.08); }
+.neu-input {
+  background: var(--bg2);
+  border: none;
+  border-radius: 10px;
+  box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+  font-family: 'Kanit', sans-serif;
+  font-size: 15px;
+  color: var(--text);
+  padding: 10px 16px;
+  width: 100%;
+  outline: none;
+  transition: box-shadow 0.2s;
+}
+.neu-input:focus { box-shadow: inset 4px 4px 10px var(--shadow-dark), inset -4px -4px 10px var(--shadow-light), 0 0 0 2px var(--primary); }
+header {
+  background: var(--card-bg);
+  box-shadow: 0 4px 12px var(--shadow-dark);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-title { display: flex; flex-direction: column; }
+.header-title h1 { font-size: 20px; font-weight: 700; color: var(--primary); }
+.header-title span { font-size: 12px; color: var(--text-muted); }
+nav { display: flex; gap: 8px; flex-wrap: wrap; }
+.tab-btn {
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-family: 'Kanit', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  background: var(--card-bg);
+  color: var(--text-muted);
+  box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+  transition: all 0.2s;
+}
+.tab-btn.active {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  box-shadow: 2px 2px 5px var(--shadow-dark);
+}
+.tab-btn:hover:not(.active) { color: var(--primary); }
+main { padding: 24px; max-width: 900px; margin: 0 auto; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.card { padding: 24px; margin-bottom: 20px; }
+.card-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--primary); }
+.form-group { margin-bottom: 16px; }
+.form-label { font-size: 14px; font-weight: 500; margin-bottom: 6px; display: block; color: var(--text-muted); }
+.progress-bar-wrap {
+  background: var(--bg2);
+  border-radius: 20px;
+  height: 10px;
+  box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 20px;
+  background: linear-gradient(90deg, var(--primary), var(--primary-light));
+  transition: width 0.4s ease;
+}
+.question-card { padding: 28px; position: relative; }
+.question-number { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+.question-text { font-size: 17px; font-weight: 500; margin-bottom: 20px; line-height: 1.7; }
+.choices { display: flex; flex-direction: column; gap: 12px; }
+.choice-btn {
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-family: 'Kanit', sans-serif;
+  font-size: 15px;
+  text-align: left;
+  border: none;
+  cursor: pointer;
+  background: var(--card-bg);
+  color: var(--text);
+  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.choice-btn:hover { transform: translateX(4px); box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light); }
+.choice-btn.selected {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  box-shadow: 3px 3px 6px var(--shadow-dark);
+}
+.choice-label {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px;
+  background: var(--bg2);
+  box-shadow: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light);
+  flex-shrink: 0;
+}
+.choice-btn.selected .choice-label { background: rgba(255,255,255,0.25); box-shadow: none; }
+.nav-btns { display: flex; justify-content: space-between; margin-top: 20px; gap: 10px; }
+.timer-circle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+}
+.timer-circle svg { transform: rotate(-90deg); }
+.timer-circle .bg-circle { fill: none; stroke: var(--bg2); stroke-width: 5; }
+.timer-circle .timer-arc { fill: none; stroke: var(--primary); stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
+.timer-num { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px; font-weight: 700; color: var(--primary); }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.5} }
+.pulse { animation: pulse 0.8s infinite; }
+.result-card { text-align: center; padding: 32px; }
+.score-big { font-size: 64px; font-weight: 700; color: var(--primary); line-height: 1; }
+.score-sub { font-size: 18px; color: var(--text-muted); margin-top: 8px; }
+.result-list { margin-top: 24px; display: flex; flex-direction: column; gap: 10px; }
+.result-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--card-bg);
+  box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+  text-align: left;
+}
+.result-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+.result-q { font-size: 14px; font-weight: 500; }
+.result-ans { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+.result-correct { color: var(--success); }
+.result-wrong { color: var(--danger); }
+table { width: 100%; border-collapse: collapse; }
+th { padding: 10px 14px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-muted); background: var(--bg2); }
+td { padding: 10px 14px; font-size: 14px; border-bottom: 1px solid var(--border); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--bg2); }
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.badge-success { background: #dcfce7; color: #16a34a; }
+.badge-danger { background: #fee2e2; color: #dc2626; }
+.badge-warning { background: #ffedd5; color: #ea580c; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card { padding: 20px; text-align: center; }
+.stat-num { font-size: 32px; font-weight: 700; color: var(--primary); }
+.stat-label { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+@media(max-width:600px){ .charts-grid{grid-template-columns:1fr;} }
+.chart-card { padding: 20px; }
+.admin-login { max-width: 360px; margin: 60px auto; padding: 32px; text-align: center; }
+.section-title { font-size: 22px; font-weight: 700; margin-bottom: 24px; color: var(--primary); }
+.filter-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.pagination { display: flex; gap: 6px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+.page-btn { padding: 6px 14px; border-radius: 8px; font-family: 'Kanit', sans-serif; font-size: 14px; border: none; cursor: pointer; background: var(--card-bg); color: var(--text); box-shadow: 3px 3px 5px var(--shadow-dark), -3px -3px 5px var(--shadow-light); }
+.page-btn.active { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; }
+.toggle-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.toggle {
+  position: relative; display: inline-block;
+  width: 52px; height: 28px;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg2);
+  border-radius: 28px;
+  box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+  transition: 0.3s;
+}
+.toggle-slider:before {
+  content: '';
+  position: absolute;
+  width: 22px; height: 22px;
+  left: 3px; top: 3px;
+  background: var(--card-bg);
+  border-radius: 50%;
+  box-shadow: 2px 2px 5px var(--shadow-dark);
+  transition: 0.3s;
+}
+.toggle input:checked + .toggle-slider { background: var(--primary); }
+.toggle input:checked + .toggle-slider:before { transform: translateX(24px); }
+.theme-opts { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+.theme-opt {
+  width: 48px; height: 48px; border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+  border: 3px solid transparent;
+  transition: all 0.2s;
+}
+.theme-opt.active { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary); }
+.hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+#qr-container canvas { border-radius: 12px; }
+.anon-btn { background: var(--bg2); border: none; border-radius: 10px; padding: 10px 18px; font-family: 'Kanit', sans-serif; font-size: 14px; color: var(--text-muted); cursor: pointer; box-shadow: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light); transition: all 0.2s; }
+.anon-btn:hover { color: var(--primary); }
+.table-wrap { overflow-x: auto; border-radius: 12px; box-shadow: 4px 4px 10px var(--shadow-dark), -4px -4px 10px var(--shadow-light); }
+.q-actions { display: flex; gap: 6px; }
+.edit-form { background: var(--bg2); border-radius: 12px; padding: 20px; margin-top: 16px; box-shadow: inset 3px 3px 8px var(--shadow-dark), inset -3px -3px 8px var(--shadow-light); }
+.choices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media(max-width:500px){ .choices-grid{grid-template-columns:1fr;} }
+select.neu-input { appearance: none; }
+.import-export { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+.file-input-label { padding: 10px 18px; border-radius: 12px; font-family: 'Kanit', sans-serif; font-size: 14px; cursor: pointer; background: var(--card-bg); color: var(--text); box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light); transition: all 0.2s; }
+.file-input-label:hover { box-shadow: 6px 6px 12px var(--shadow-dark); }
+#import-file { display: none; }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: var(--card-bg); border-radius: 20px; padding: 32px; max-width: 420px; width: 90%; box-shadow: 8px 8px 20px var(--shadow-dark), -8px -8px 20px var(--shadow-light); text-align: center; }
+.modal h3 { font-size: 20px; font-weight: 700; margin-bottom: 12px; color: var(--text); }
+.modal p { font-size: 15px; color: var(--text-muted); margin-bottom: 20px; }
+.modal-btns { display: flex; gap: 10px; justify-content: center; }
+.loader { display: flex; justify-content: center; padding: 40px; }
+.spinner { width: 40px; height: 40px; border: 4px solid var(--bg2); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)} }
+.fade-in { animation: fadeIn 0.3s ease; }
+.row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media(max-width:600px){ .row-grid{grid-template-columns:1fr;} }
+.top-actions { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: space-between; align-items: center; }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-title">
+    <h1 id="header-title-text">ระบบข้อสอบ</h1>
+    <span id="header-sub-text">คำนามภาษาอังกฤษ</span>
+  </div>
+  <nav>
+    <button class="tab-btn active" onclick="switchTab('quiz')">📝 ทำข้อสอบ</button>
+    <button class="tab-btn" id="tab-admin" onclick="switchTab('admin')">⚙️ จัดการ</button>
+    <button class="tab-btn" id="tab-dash" onclick="switchTab('dashboard')">📊 Dashboard</button>
+    <button class="tab-btn" id="tab-settings" onclick="switchTab('settings')">🔧 ตั้งค่า</button>
+  </nav>
+</header>
+<main>
+  <div id="tab-quiz" class="tab-content active">
+    <div id="quiz-login-section">
+      <div class="neu card fade-in">
+        <div class="card-title">👤 ข้อมูลผู้เข้าสอบ</div>
+        <div class="form-group">
+          <label class="form-label">ชื่อ-นามสกุล</label>
+          <input class="neu-input" id="student-name" placeholder="กรอกชื่อ-นามสกุล">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ห้องเรียน</label>
+          <input class="neu-input" id="student-room" placeholder="เช่น ม.4/1">
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
+          <button class="neu-btn neu-btn-primary" onclick="startQuiz(false)" style="flex:1">🚀 เริ่มทำข้อสอบ</button>
+          <button class="anon-btn" onclick="startQuiz(true)">👻 ไม่ระบุตัวตน</button>
+        </div>
+      </div>
+    </div>
+    <div id="quiz-section" style="display:none">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progress-bar"></div>
+      </div>
+      <div class="neu question-card fade-in" id="question-card">
+        <div id="timer-container" style="display:none">
+          <div class="timer-circle">
+            <svg viewBox="0 0 60 60" width="60" height="60">
+              <circle class="bg-circle" cx="30" cy="30" r="26"/>
+              <circle class="timer-arc" id="timer-arc" cx="30" cy="30" r="26" stroke-dasharray="163.36" stroke-dashoffset="0"/>
+            </svg>
+            <div class="timer-num" id="timer-num">30</div>
+          </div>
+        </div>
+        <div class="question-number" id="question-number"></div>
+        <div class="question-text" id="question-text"></div>
+        <div class="choices" id="choices-container"></div>
+        <div class="nav-btns">
+          <button class="neu-btn" id="prev-btn" onclick="prevQuestion()">◀ ก่อนหน้า</button>
+          <button class="neu-btn neu-btn-primary" id="next-btn" onclick="nextQuestion()">ถัดไป ▶</button>
+          <button class="neu-btn neu-btn-primary" id="submit-btn" onclick="confirmSubmit()" style="display:none">✅ ส่งคำตอบ</button>
+        </div>
+      </div>
+    </div>
+    <div id="result-section" style="display:none">
+      <div class="neu result-card fade-in">
+        <div class="score-big" id="score-display"></div>
+        <div class="score-sub" id="score-sub"></div>
+        <div id="pass-badge" style="margin:12px 0"></div>
+        <button class="neu-btn neu-btn-primary" onclick="resetQuiz()" style="margin-top:16px">🔄 ทำใหม่</button>
+      </div>
+      <div class="neu card fade-in" style="margin-top:20px">
+        <div class="card-title">📋 สรุปรายข้อ</div>
+        <div class="result-list" id="result-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-admin" class="tab-content">
+    <div id="admin-login-wrap">
+      <div class="neu admin-login fade-in">
+        <div style="font-size:40px;margin-bottom:12px">🔐</div>
+        <div class="section-title">เข้าสู่ระบบ Admin</div>
+        <div class="form-group">
+          <input class="neu-input" id="admin-pw" type="password" placeholder="รหัสผ่าน">
+        </div>
+        <button class="neu-btn neu-btn-primary" style="width:100%;margin-top:8px" onclick="doAdminLogin()">เข้าสู่ระบบ</button>
+        <div id="login-error" style="color:var(--danger);font-size:13px;margin-top:8px"></div>
+      </div>
+    </div>
+    <div id="admin-content" style="display:none">
+      <div class="neu card">
+        <div class="top-actions">
+          <div class="card-title" style="margin-bottom:0">📝 จัดการข้อสอบ</div>
+          <div class="import-export">
+            <label class="file-input-label">📥 Import Excel <input type="file" id="import-file" accept=".xlsx,.xls" onchange="importExcel(event)"></label>
+            <button class="neu-btn" onclick="exportExcel()">📤 Export Excel</button>
+            <button class="neu-btn neu-btn-primary" onclick="showAddForm()">➕ เพิ่มข้อสอบ</button>
+          </div>
+        </div>
+        <div id="add-edit-form" class="edit-form" style="display:none">
+          <div class="row-grid" style="margin-bottom:12px">
+            <div class="form-group" style="grid-column:1/-1">
+              <label class="form-label">คำถาม</label>
+              <input class="neu-input" id="f-question" placeholder="คำถาม">
+            </div>
+          </div>
+          <div class="choices-grid">
+            <div class="form-group"><label class="form-label">ตัวเลือก A</label><input class="neu-input" id="f-a" placeholder="A"></div>
+            <div class="form-group"><label class="form-label">ตัวเลือก B</label><input class="neu-input" id="f-b" placeholder="B"></div>
+            <div class="form-group"><label class="form-label">ตัวเลือก C</label><input class="neu-input" id="f-c" placeholder="C"></div>
+            <div class="form-group"><label class="form-label">ตัวเลือก D</label><input class="neu-input" id="f-d" placeholder="D"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">เฉลย</label>
+            <select class="neu-input" id="f-answer" style="width:auto">
+              <option value="A">A</option><option value="B">B</option>
+              <option value="C">C</option><option value="D">D</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button class="neu-btn neu-btn-primary" onclick="saveQuestion()">💾 บันทึก</button>
+            <button class="neu-btn" onclick="cancelForm()">ยกเลิก</button>
+          </div>
+          <input type="hidden" id="f-id">
+        </div>
+        <div class="table-wrap" style="margin-top:16px">
+          <table id="questions-table">
+            <thead><tr><th>#</th><th>คำถาม</th><th>A</th><th>B</th><th>C</th><th>D</th><th>เฉลย</th><th>จัดการ</th></tr></thead>
+            <tbody id="questions-tbody"></tbody>
+          </table>
+        </div>
+        <div id="questions-loader" class="loader"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-dashboard" class="tab-content">
+    <div id="dash-login-wall" style="display:none">
+      <div class="neu card" style="text-align:center;padding:40px">
+        <div style="font-size:40px">🔒</div>
+        <div style="font-size:18px;font-weight:600;margin-top:12px">กรุณาเข้าสู่ระบบ Admin ก่อน</div>
+        <button class="neu-btn neu-btn-primary" style="margin-top:16px" onclick="switchTab('admin')">เข้าสู่ระบบ</button>
+      </div>
+    </div>
+    <div id="dash-content">
+      <div class="stat-grid" id="stat-cards"></div>
+      <div class="charts-grid">
+        <div class="neu chart-card"><div class="card-title">📊 คะแนนเฉลี่ยตามห้อง</div><canvas id="chart-room"></canvas></div>
+        <div class="neu chart-card"><div class="card-title">❌ Top 5 ข้อที่ตอบผิดมาก</div><canvas id="chart-wrong"></canvas></div>
+      </div>
+      <div class="neu card">
+        <div class="top-actions">
+          <div class="card-title" style="margin-bottom:0">👥 รายชื่อนักเรียน</div>
+          <div class="filter-row" style="margin-bottom:0">
+            <select class="neu-input" id="filter-room" onchange="renderResultsTable()" style="width:auto">
+              <option value="">— ทุกห้อง —</option>
+            </select>
+            <button class="neu-btn" style="background:var(--danger);color:#fff;box-shadow:none" onclick="confirmClearResults()">🗑️ ล้างผลสอบ</button>
+          </div>
+        </div>
+        <div class="table-wrap" style="margin-top:16px">
+          <table><thead><tr><th>#</th><th>ชื่อ</th><th>ห้อง</th><th>คะแนน</th><th>%</th><th>สถานะ</th><th>วันที่</th></tr></thead>
+          <tbody id="results-tbody"></tbody></table>
+        </div>
+        <div class="pagination" id="results-pagination"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-settings" class="tab-content">
+    <div id="settings-login-wall" style="display:none">
+      <div class="neu card" style="text-align:center;padding:40px">
+        <div style="font-size:40px">🔒</div>
+        <div style="font-size:18px;font-weight:600;margin-top:12px">กรุณาเข้าสู่ระบบ Admin ก่อน</div>
+        <button class="neu-btn neu-btn-primary" style="margin-top:16px" onclick="switchTab('admin')">เข้าสู่ระบบ</button>
+      </div>
+    </div>
+    <div id="settings-content">
+      <div class="neu card">
+        <div class="card-title">🔧 ตั้งค่าทั่วไป</div>
+        <div class="row-grid">
+          <div class="form-group">
+            <label class="form-label">ชื่อระบบ</label>
+            <input class="neu-input" id="s-title" placeholder="ชื่อระบบ">
+          </div>
+          <div class="form-group">
+            <label class="form-label">ชื่อวิชา</label>
+            <input class="neu-input" id="s-subject" placeholder="ชื่อวิชา">
+          </div>
+          <div class="form-group">
+            <label class="form-label">ผู้พัฒนา</label>
+            <input class="neu-input" id="s-dev" placeholder="ชื่อผู้พัฒนา">
+          </div>
+          <div class="form-group">
+            <label class="form-label">รหัสผ่าน Admin</label>
+            <input class="neu-input" id="s-pw" type="password" placeholder="รหัสผ่านใหม่">
+          </div>
+        </div>
+      </div>
+      <div class="neu card">
+        <div class="card-title">🎯 เกณฑ์การผ่าน</div>
+        <div class="form-group" style="max-width:300px">
+          <label class="form-label">ร้อยละคะแนนที่ผ่านเกณฑ์ (%)</label>
+          <input class="neu-input" id="s-pass" type="number" min="1" max="100" placeholder="60">
+          <div class="hint" id="pass-hint">นักเรียนต้องได้ ≥ 60% จึงถือว่าผ่าน</div>
+        </div>
+      </div>
+      <div class="neu card">
+        <div class="card-title">⏱️ ระบบจับเวลา</div>
+        <div class="toggle-wrap">
+          <label class="toggle">
+            <input type="checkbox" id="s-timer-enabled" onchange="toggleTimerInput()">
+            <span class="toggle-slider"></span>
+          </label>
+          <span>เปิดใช้จับเวลาต่อข้อ</span>
+        </div>
+        <div class="form-group" style="max-width:300px">
+          <label class="form-label">เวลาต่อข้อ (วินาที)</label>
+          <input class="neu-input" id="s-timer-sec" type="number" min="5" max="300" placeholder="30">
+          <div class="hint">เวลานี้จะใช้กับทุกข้อเท่ากัน</div>
+        </div>
+      </div>
+      <div class="neu card">
+        <div class="card-title">🎨 ธีมสี</div>
+        <div class="theme-opts">
+          <div class="theme-opt active" style="background:linear-gradient(135deg,#fb2883,#fbf5ea)" title="ชมพู-ครีม" onclick="setTheme('default',this)"></div>
+          <div class="theme-opt" style="background:linear-gradient(135deg,#16a34a,#f0fdf4)" title="เขียว-ขาว" onclick="setTheme('green',this)"></div>
+          <div class="theme-opt" style="background:linear-gradient(135deg,#2563eb,#eff6ff)" title="น้ำเงิน-ขาว" onclick="setTheme('blue',this)"></div>
+          <div class="theme-opt" style="background:linear-gradient(135deg,#9333ea,#faf5ff)" title="ม่วง-ชมพู" onclick="setTheme('purple',this)"></div>
+        </div>
+      </div>
+      <div class="neu card">
+        <button class="neu-btn neu-btn-primary" onclick="saveSettings()" style="width:100%">💾 บันทึกการตั้งค่า</button>
+      </div>
+      <div class="neu card">
+        <div class="card-title">📱 QR Code</div>
+        <div id="qr-container" style="margin-bottom:16px"></div>
+        <button class="neu-btn" onclick="copyURL()">📋 คัดลอก URL</button>
+      </div>
+      <div class="neu card" style="border: 2px solid var(--danger)">
+        <div class="card-title" style="color:var(--danger)">⚠️ โซนอันตราย</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="neu-btn" style="background:var(--danger);color:#fff;box-shadow:none" onclick="confirmClearQuestions()">🗑️ ล้างข้อสอบทั้งหมด</button>
+          <button class="neu-btn" style="background:var(--danger);color:#fff;box-shadow:none" onclick="confirmClearResults()">🗑️ ล้างผลสอบทั้งหมด</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal">
+    <h3 id="modal-title">ยืนยัน</h3>
+    <p id="modal-msg"></p>
+    <div class="modal-btns">
+      <button class="neu-btn neu-btn-primary" id="modal-ok">ตกลง</button>
+      <button class="neu-btn" onclick="closeModal()">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="submit-modal">
+  <div class="modal">
+    <h3>ยืนยันการส่งคำตอบ</h3>
+    <p id="unanswered-msg"></p>
+    <div class="modal-btns">
+      <button class="neu-btn neu-btn-primary" onclick="submitQuiz()">✅ ส่งเลย</button>
+      <button class="neu-btn" onclick="closeSubmitModal()">◀ กลับไปทำต่อ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDne0MkTuXGGDTBURvfjLikFFmFZvUPq2g",
+  authDomain: "quiztest-bcb55.firebaseapp.com",
+  projectId: "quiztest-bcb55",
+  storageBucket: "quiztest-bcb55.firebasestorage.app",
+  messagingSenderId: "397697993673",
+  appId: "1:397697993673:web:0008854f31cc6492cbf618"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let appSettings = {
+  systemTitle: 'ระบบข้อสอบ',
+  subject: 'คำนามภาษาอังกฤษ',
+  developer: 'พรรณิภา ศรีสง่า | กุญชรศิรวิทย์',
+  password: '1234',
+  passPercent: 60,
+  timerEnabled: false,
+  timerSeconds: 30,
+  theme: 'default'
+};
+let adminLoggedIn = false;
+let questions = [];
+let allResults = [];
+let currentQ = 0;
+let answers = {};
+let studentName = '';
+let studentRoom = '';
+let timerInterval = null;
+let timerLeft = 30;
+let chartRoom = null;
+let chartWrong = null;
+let resultPage = 1;
+const PAGE_SIZE = 15;
+let editingId = null;
+
+async function loadSettings() {
+  try {
+    const doc = await db.collection('settings').doc('main').get();
+    if (doc.exists) {
+      const d = doc.data();
+      appSettings = Object.assign(appSettings, d);
+    }
+  } catch(e) {}
+  applySettings();
+}
+
+function applySettings() {
+  document.getElementById('header-title-text').textContent = appSettings.systemTitle || 'ระบบข้อสอบ';
+  document.getElementById('header-sub-text').textContent = appSettings.subject || '';
+  applyTheme(appSettings.theme || 'default');
+  const inp = document.getElementById('s-pass');
+  if(inp) {
+    inp.value = appSettings.passPercent || 60;
+    document.getElementById('pass-hint').textContent = `นักเรียนต้องได้ ≥ ${appSettings.passPercent || 60}% จึงถือว่าผ่าน`;
+  }
+}
+
+function applyTheme(theme) {
+  document.body.className = theme === 'default' ? '' : `theme-${theme}`;
+  document.querySelectorAll('.theme-opt').forEach((el,i) => {
+    const themes = ['default','green','blue','purple'];
+    el.classList.toggle('active', themes[i] === theme);
+  });
+}
+
+function setTheme(theme, el) {
+  appSettings.theme = theme;
+  applyTheme(theme);
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  const idx = ['quiz','admin','dashboard','settings'].indexOf(name);
+  document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+  if (name === 'admin') renderAdminTab();
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'settings') renderSettingsTab();
+}
+
+function renderAdminTab() {
+  if (!adminLoggedIn) {
+    document.getElementById('admin-login-wrap').style.display = '';
+    document.getElementById('admin-content').style.display = 'none';
+  } else {
+    document.getElementById('admin-login-wrap').style.display = 'none';
+    document.getElementById('admin-content').style.display = '';
+    loadQuestions();
+  }
+}
+
+function doAdminLogin() {
+  const pw = document.getElementById('admin-pw').value;
+  if (pw === appSettings.password) {
+    adminLoggedIn = true;
+    document.getElementById('login-error').textContent = '';
+    renderAdminTab();
+    updateAdminWalls();
+  } else {
+    document.getElementById('login-error').textContent = '❌ รหัสผ่านไม่ถูกต้อง';
+  }
+}
+
+function updateAdminWalls() {
+  if (adminLoggedIn) {
+    const dwall = document.getElementById('dash-login-wall');
+    const dcont = document.getElementById('dash-content');
+    const swall = document.getElementById('settings-login-wall');
+    const scont = document.getElementById('settings-content');
+    if(dwall) dwall.style.display = 'none';
+    if(dcont) dcont.style.display = '';
+    if(swall) swall.style.display = 'none';
+    if(scont) scont.style.display = '';
+  } else {
+    const dwall = document.getElementById('dash-login-wall');
+    const dcont = document.getElementById('dash-content');
+    const swall = document.getElementById('settings-login-wall');
+    const scont = document.getElementById('settings-content');
+    if(dwall) dwall.style.display = '';
+    if(dcont) dcont.style.display = 'none';
+    if(swall) swall.style.display = '';
+    if(scont) scont.style.display = 'none';
+  }
+}
+
+async function loadQuestions() {
+  document.getElementById('questions-loader').style.display = '';
+  document.getElementById('questions-tbody').innerHTML = '';
+  const snap = await db.collection('questions').orderBy('order','asc').get().catch(() => db.collection('questions').get());
+  questions = [];
+  snap.forEach(d => questions.push({ id: d.id, ...d.data() }));
+  document.getElementById('questions-loader').style.display = 'none';
+  renderQuestionsTable();
+}
+
+function renderQuestionsTable() {
+  const tbody = document.getElementById('questions-tbody');
+  tbody.innerHTML = '';
+  questions.forEach((q, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td style="max-width:220px;word-break:break-word">${q.question}</td><td>${q.a}</td><td>${q.b}</td><td>${q.c}</td><td>${q.d}</td><td><span class="badge badge-success">${q.answer}</span></td><td><div class="q-actions"><button class="neu-btn" style="padding:6px 10px;font-size:12px" onclick="editQuestion('${q.id}')">✏️</button><button class="neu-btn" style="padding:6px 10px;font-size:12px;color:var(--danger)" onclick="deleteQuestion('${q.id}')">🗑️</button></div></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function showAddForm() {
+  editingId = null;
+  document.getElementById('f-question').value = '';
+  document.getElementById('f-a').value = '';
+  document.getElementById('f-b').value = '';
+  document.getElementById('f-c').value = '';
+  document.getElementById('f-d').value = '';
+  document.getElementById('f-answer').value = 'A';
+  document.getElementById('f-id').value = '';
+  document.getElementById('add-edit-form').style.display = '';
+  document.getElementById('f-question').focus();
+}
+
+function cancelForm() {
+  document.getElementById('add-edit-form').style.display = 'none';
+  editingId = null;
+}
+
+function editQuestion(id) {
+  const q = questions.find(x => x.id === id);
+  if (!q) return;
+  editingId = id;
+  document.getElementById('f-question').value = q.question;
+  document.getElementById('f-a').value = q.a;
+  document.getElementById('f-b').value = q.b;
+  document.getElementById('f-c').value = q.c;
+  document.getElementById('f-d').value = q.d;
+  document.getElementById('f-answer').value = q.answer;
+  document.getElementById('f-id').value = id;
+  document.getElementById('add-edit-form').style.display = '';
+  document.getElementById('f-question').focus();
+}
+
+async function saveQuestion() {
+  const data = {
+    question: document.getElementById('f-question').value.trim(),
+    a: document.getElementById('f-a').value.trim(),
+    b: document.getElementById('f-b').value.trim(),
+    c: document.getElementById('f-c').value.trim(),
+    d: document.getElementById('f-d').value.trim(),
+    answer: document.getElementById('f-answer').value,
+    order: editingId ? (questions.find(x=>x.id===editingId)||{}).order || Date.now() : Date.now()
+  };
+  if (!data.question || !data.a || !data.b || !data.c || !data.d) { alert('กรุณากรอกข้อมูลให้ครบ'); return; }
+  if (questions.length >= 60 && !editingId) { alert('รองรับสูงสุด 60 ข้อ'); return; }
+  if (editingId) {
+    await db.collection('questions').doc(editingId).set(data);
+  } else {
+    await db.collection('questions').add(data);
+  }
+  cancelForm();
+  loadQuestions();
+}
+
+async function deleteQuestion(id) {
+  showModal('ลบข้อสอบ', 'ต้องการลบข้อสอบนี้ใช่หรือไม่?', async () => {
+    await db.collection('questions').doc(id).delete();
+    loadQuestions();
+  });
+}
+
+async function importExcel(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async evt => {
+    const wb = XLSX.read(evt.target.result, { type: 'binary' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+    if (rows.length < 1) return;
+    const batch = db.batch();
+    let count = 0;
+    for (let i = 0; i < rows.length && questions.length + count < 60; i++) {
+      const r = rows[i];
+      if (!r[0]) continue;
+      const ref = db.collection('questions').doc();
+      batch.set(ref, {
+        question: String(r[0]||''),
+        a: String(r[1]||''),
+        b: String(r[2]||''),
+        c: String(r[3]||''),
+        d: String(r[4]||''),
+        answer: String(r[5]||'A').toUpperCase(),
+        order: Date.now() + i
+      });
+      count++;
+    }
+    await batch.commit();
+    e.target.value = '';
+    loadQuestions();
+    alert(`นำเข้าสำเร็จ ${count} ข้อ`);
+  };
+  reader.readAsBinaryString(file);
+}
+
+function exportExcel() {
+  const rows = [['คำถาม','A','B','C','D','เฉลย']];
+  questions.forEach(q => rows.push([q.question, q.a, q.b, q.c, q.d, q.answer]));
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Questions');
+  XLSX.writeFile(wb, 'questions.xlsx');
+}
+
+async function startQuiz(anon) {
+  if (!anon) {
+    const n = document.getElementById('student-name').value.trim();
+    const r = document.getElementById('student-room').value.trim();
+    if (!n || !r) { alert('กรุณากรอกชื่อและห้องเรียน'); return; }
+    studentName = n;
+    studentRoom = r;
+  } else {
+    studentName = 'ไม่ระบุตัวตน';
+    studentRoom = '-';
+  }
+  const snap = await db.collection('questions').orderBy('order','asc').get().catch(() => db.collection('questions').get());
+  questions = [];
+  snap.forEach(d => questions.push({ id: d.id, ...d.data() }));
+  if (questions.length === 0) { alert('ยังไม่มีข้อสอบในระบบ'); return; }
+  answers = {};
+  currentQ = 0;
+  document.getElementById('quiz-login-section').style.display = 'none';
+  document.getElementById('quiz-section').style.display = '';
+  document.getElementById('result-section').style.display = 'none';
+  renderQuestion();
+}
+
+function renderQuestion() {
+  stopTimer();
+  const q = questions[currentQ];
+  const total = questions.length;
+  document.getElementById('progress-bar').style.width = `${((currentQ+1)/total)*100}%`;
+  document.getElementById('question-number').textContent = `ข้อที่ ${currentQ+1} จาก ${total}`;
+  document.getElementById('question-text').textContent = q.question;
+  const container = document.getElementById('choices-container');
+  container.innerHTML = '';
+  ['A','B','C','D'].forEach(letter => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn' + (answers[currentQ] === letter ? ' selected' : '');
+    btn.innerHTML = `<span class="choice-label">${letter}</span><span>${q[letter.toLowerCase()]}</span>`;
+    btn.onclick = () => selectAnswer(letter);
+    container.appendChild(btn);
+  });
+  document.getElementById('prev-btn').style.display = currentQ === 0 ? 'none' : '';
+  document.getElementById('next-btn').style.display = currentQ === total-1 ? 'none' : '';
+  document.getElementById('submit-btn').style.display = currentQ === total-1 ? '' : 'none';
+  const card = document.getElementById('question-card');
+  card.classList.remove('fade-in');
+  void card.offsetWidth;
+  card.classList.add('fade-in');
+  if (appSettings.timerEnabled && !answers[currentQ]) {
+    startTimer();
+  } else {
+    document.getElementById('timer-container').style.display = 'none';
+  }
+}
+
+function selectAnswer(letter) {
+  if (appSettings.timerEnabled) stopTimer();
+  answers[currentQ] = letter;
+  document.querySelectorAll('.choice-btn').forEach((btn, i) => {
+    btn.classList.toggle('selected', ['A','B','C','D'][i] === letter);
+  });
+  document.getElementById('timer-container').style.display = 'none';
+}
+
+function nextQuestion() {
+  if (currentQ < questions.length - 1) { currentQ++; renderQuestion(); }
+}
+
+function prevQuestion() {
+  if (currentQ > 0) { currentQ--; renderQuestion(); }
+}
+
+function confirmSubmit() {
+  const unanswered = questions.filter((_, i) => !answers[i]).length;
+  const msg = unanswered > 0 ? `คุณยังไม่ได้ตอบ ${unanswered} ข้อ ต้องการส่งเลยหรือไม่?` : 'ต้องการส่งคำตอบเลยหรือไม่?';
+  document.getElementById('unanswered-msg').textContent = msg;
+  document.getElementById('submit-modal').classList.add('show');
+}
+
+function closeSubmitModal() {
+  document.getElementById('submit-modal').classList.remove('show');
+}
+
+async function submitQuiz() {
+  closeSubmitModal();
+  stopTimer();
+  let score = 0;
+  questions.forEach((q, i) => {
+    if (answers[i] === q.answer) score++;
+  });
+  const total = questions.length;
+  const pct = Math.round((score/total)*100);
+  const pass = pct >= (appSettings.passPercent || 60);
+  const resultData = {
+    name: studentName,
+    room: studentRoom,
+    score, total, percent: pct,
+    answers: Object.assign({}, answers),
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  try { await db.collection('results').add(resultData); } catch(e) {}
+  document.getElementById('quiz-section').style.display = 'none';
+  document.getElementById('result-section').style.display = '';
+  document.getElementById('score-display').textContent = `${score}/${total}`;
+  document.getElementById('score-sub').textContent = `คะแนนรวม ${pct}% | ${studentName} | ห้อง ${studentRoom}`;
+  document.getElementById('pass-badge').innerHTML = pass
+    ? '<span class="badge badge-success" style="font-size:16px;padding:8px 20px">✅ ผ่านเกณฑ์</span>'
+    : '<span class="badge badge-danger" style="font-size:16px;padding:8px 20px">❌ ไม่ผ่านเกณฑ์</span>';
+  const list = document.getElementById('result-list');
+  list.innerHTML = '';
+  questions.forEach((q, i) => {
+    const userAns = answers[i] || 'ไม่ได้ตอบ';
+    const correct = userAns === q.answer;
+    const div = document.createElement('div');
+    div.className = 'result-item';
+    div.innerHTML = `<div class="result-icon">${correct ? '✅' : '❌'}</div><div><div class="result-q">ข้อ ${i+1}: ${q.question}</div><div class="result-ans">คำตอบของคุณ: <b class="${correct ? 'result-correct' : 'result-wrong'}">${userAns}</b> ${!correct ? `| เฉลย: <b class="result-correct">${q.answer}</b> (${q[q.answer.toLowerCase()]})` : ''}</div></div>`;
+    list.appendChild(div);
+  });
+  const rc = document.getElementById('result-section');
+  rc.classList.remove('fade-in');
+  void rc.offsetWidth;
+  rc.classList.add('fade-in');
+}
+
+function resetQuiz() {
+  answers = {};
+  currentQ = 0;
+  document.getElementById('result-section').style.display = 'none';
+  document.getElementById('quiz-login-section').style.display = '';
+  document.getElementById('student-name').value = '';
+  document.getElementById('student-room').value = '';
+}
+
+function startTimer() {
+  timerLeft = appSettings.timerSeconds || 30;
+  document.getElementById('timer-container').style.display = '';
+  updateTimerUI();
+  timerInterval = setInterval(() => {
+    timerLeft--;
+    updateTimerUI();
+    if (timerLeft <= 0) {
+      stopTimer();
+      if (!answers[currentQ]) answers[currentQ] = null;
+      setTimeout(() => {
+        if (currentQ < questions.length - 1) { currentQ++; renderQuestion(); }
+        else confirmSubmit();
+      }, 500);
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+function updateTimerUI() {
+  const total = appSettings.timerSeconds || 30;
+  const pct = timerLeft / total;
+  const circumference = 163.36;
+  const offset = circumference * (1 - pct);
+  const arc = document.getElementById('timer-arc');
+  const numEl = document.getElementById('timer-num');
+  if (!arc || !numEl) return;
+  arc.style.strokeDashoffset = offset;
+  numEl.textContent = timerLeft;
+  let color = 'var(--primary)';
+  if (pct < 0.2) { color = 'var(--danger)'; arc.classList.add('pulse'); }
+  else if (pct < 0.5) { color = 'var(--warning)'; arc.classList.remove('pulse'); }
+  else { color = 'var(--primary)'; arc.classList.remove('pulse'); }
+  arc.style.stroke = color;
+  numEl.style.color = color;
+}
+
+async function renderDashboard() {
+  if (!adminLoggedIn) { updateAdminWalls(); return; }
+  updateAdminWalls();
+  const snap = await db.collection('results').orderBy('timestamp','desc').get().catch(() => db.collection('results').get());
+  allResults = [];
+  snap.forEach(d => allResults.push({ id: d.id, ...d.data() }));
+  const n = allResults.length;
+  const avg = n ? Math.round(allResults.reduce((a,r) => a + r.percent, 0) / n) : 0;
+  const maxS = n ? Math.max(...allResults.map(r => r.percent)) : 0;
+  const minS = n ? Math.min(...allResults.map(r => r.percent)) : 0;
+  const passed = allResults.filter(r => r.percent >= (appSettings.passPercent || 60)).length;
+  const passRate = n ? Math.round((passed/n)*100) : 0;
+  const statData = [
+    { icon:'👥', num: n, label:'ผู้เข้าสอบทั้งหมด' },
+    { icon:'📊', num: avg+'%', label:'คะแนนเฉลี่ย' },
+    { icon:'🏆', num: maxS+'%', label:'สูงสุด' },
+    { icon:'📉', num: minS+'%', label:'ต่ำสุด' },
+    { icon:'🎯', num: passRate+'%', label:`ผ่านเกณฑ์ (${passed}/${n} คน)`, badge: passRate >= 50 ? 'success' : 'danger' }
+  ];
+  const sg = document.getElementById('stat-cards');
+  sg.innerHTML = '';
+  statData.forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'neu stat-card fade-in';
+    d.innerHTML = `<div style="font-size:28px">${s.icon}</div><div class="stat-num">${s.num}</div><div class="stat-label">${s.label}</div>${s.badge ? `<span class="badge badge-${s.badge}" style="margin-top:6px">${s.badge==='success'?'✅ ดี':'⚠️ ต่ำ'}</span>` : ''}`;
+    sg.appendChild(d);
+  });
+  renderCharts();
+  const rooms = [...new Set(allResults.map(r => r.room))].filter(Boolean);
+  const sel = document.getElementById('filter-room');
+  sel.innerHTML = '<option value="">— ทุกห้อง —</option>';
+  rooms.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; sel.appendChild(o); });
+  resultPage = 1;
+  renderResultsTable();
+}
+
+function renderCharts() {
+  const roomMap = {};
+  allResults.forEach(r => {
+    if (!roomMap[r.room]) roomMap[r.room] = [];
+    roomMap[r.room].push(r.percent);
+  });
+  const roomLabels = Object.keys(roomMap);
+  const roomAvgs = roomLabels.map(rm => Math.round(roomMap[rm].reduce((a,b)=>a+b,0)/roomMap[rm].length));
+  if (chartRoom) chartRoom.destroy();
+  const ctx1 = document.getElementById('chart-room').getContext('2d');
+  chartRoom = new Chart(ctx1, {
+    type: 'bar',
+    data: { labels: roomLabels, datasets: [{ label:'คะแนนเฉลี่ย (%)', data: roomAvgs, backgroundColor: 'var(--primary)', borderRadius: 8 }] },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { max: 100, beginAtZero: true } } }
+  });
+  const wrongCount = {};
+  allResults.forEach(r => {
+    if (!r.answers) return;
+    const qs = questions.length ? questions : [];
+    Object.entries(r.answers).forEach(([idx, ans]) => {
+      const q = qs[parseInt(idx)];
+      if (q && ans !== q.answer) {
+        wrongCount[parseInt(idx)+1] = (wrongCount[parseInt(idx)+1] || 0) + 1;
+      }
+    });
+  });
+  const sorted = Object.entries(wrongCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  if (chartWrong) chartWrong.destroy();
+  const ctx2 = document.getElementById('chart-wrong').getContext('2d');
+  chartWrong = new Chart(ctx2, {
+    type: 'bar',
+    data: { labels: sorted.map(x=>`ข้อ ${x[0]}`), datasets: [{ label:'จำนวนที่ตอบผิด', data: sorted.map(x=>x[1]), backgroundColor: '#ef4444', borderRadius: 8 }] },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+
+function renderResultsTable() {
+  const filterRoom = document.getElementById('filter-room').value;
+  const filtered = allResults.filter(r => !filterRoom || r.room === filterRoom);
+  const total = filtered.length;
+  const pages = Math.ceil(total / PAGE_SIZE) || 1;
+  if (resultPage > pages) resultPage = pages;
+  const slice = filtered.slice((resultPage-1)*PAGE_SIZE, resultPage*PAGE_SIZE);
+  const tbody = document.getElementById('results-tbody');
+  tbody.innerHTML = '';
+  slice.forEach((r, i) => {
+    const pass = r.percent >= (appSettings.passPercent || 60);
+    const ts = r.timestamp ? new Date(r.timestamp.seconds * 1000).toLocaleDateString('th-TH') : '-';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${(resultPage-1)*PAGE_SIZE+i+1}</td><td>${r.name||'-'}</td><td>${r.room||'-'}</td><td>${r.score||0}/${r.total||0}</td><td>${r.percent||0}%</td><td><span class="badge badge-${pass?'success':'danger'}">${pass?'✅ ผ่าน':'❌ ไม่ผ่าน'}</span></td><td>${ts}</td>`;
+    tbody.appendChild(tr);
+  });
+  const pg = document.getElementById('results-pagination');
+  pg.innerHTML = '';
+  for (let p = 1; p <= pages; p++) {
+    const btn = document.createElement('button');
+    btn.className = 'page-btn' + (p === resultPage ? ' active' : '');
+    btn.textContent = p;
+    btn.onclick = () => { resultPage = p; renderResultsTable(); };
+    pg.appendChild(btn);
+  }
+}
+
+function renderSettingsTab() {
+  if (!adminLoggedIn) { updateAdminWalls(); return; }
+  updateAdminWalls();
+  document.getElementById('s-title').value = appSettings.systemTitle || '';
+  document.getElementById('s-subject').value = appSettings.subject || '';
+  document.getElementById('s-dev').value = appSettings.developer || '';
+  document.getElementById('s-pw').value = '';
+  document.getElementById('s-pass').value = appSettings.passPercent || 60;
+  document.getElementById('s-timer-enabled').checked = appSettings.timerEnabled || false;
+  document.getElementById('s-timer-sec').value = appSettings.timerSeconds || 30;
+  document.getElementById('pass-hint').textContent = `นักเรียนต้องได้ ≥ ${appSettings.passPercent || 60}% จึงถือว่าผ่าน`;
+  toggleTimerInput();
+  generateQR();
+  const themeOpts = document.querySelectorAll('.theme-opt');
+  const themes = ['default','green','blue','purple'];
+  themeOpts.forEach((el,i) => el.classList.toggle('active', themes[i] === (appSettings.theme||'default')));
+}
+
+function toggleTimerInput() {
+  const enabled = document.getElementById('s-timer-enabled').checked;
+  document.getElementById('s-timer-sec').disabled = !enabled;
+}
+
+async function saveSettings() {
+  const newPw = document.getElementById('s-pw').value.trim();
+  appSettings.systemTitle = document.getElementById('s-title').value.trim() || appSettings.systemTitle;
+  appSettings.subject = document.getElementById('s-subject').value.trim() || appSettings.subject;
+  appSettings.developer = document.getElementById('s-dev').value.trim() || appSettings.developer;
+  if (newPw) appSettings.password = newPw;
+  appSettings.passPercent = parseInt(document.getElementById('s-pass').value) || 60;
+  appSettings.timerEnabled = document.getElementById('s-timer-enabled').checked;
+  appSettings.timerSeconds = parseInt(document.getElementById('s-timer-sec').value) || 30;
+  try {
+    await db.collection('settings').doc('main').set(appSettings);
+    alert('✅ บันทึกการตั้งค่าสำเร็จ');
+    applySettings();
+  } catch(e) { alert('เกิดข้อผิดพลาด: ' + e.message); }
+}
+
+function generateQR() {
+  const container = document.getElementById('qr-container');
+  container.innerHTML = '';
+  new QRCode(container, { text: window.location.href, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.H });
+}
+
+function copyURL() {
+  navigator.clipboard.writeText(window.location.href).then(() => alert('✅ คัดลอก URL แล้ว'));
+}
+
+let modalCallback = null;
+function showModal(title, msg, cb) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-msg').textContent = msg;
+  modalCallback = cb;
+  document.getElementById('confirm-modal').classList.add('show');
+  document.getElementById('modal-ok').onclick = () => { closeModal(); if(modalCallback) modalCallback(); };
+}
+function closeModal() { document.getElementById('confirm-modal').classList.remove('show'); }
+
+let confirmStep = 0;
+let pendingClearFn = null;
+function confirmClearResults() {
+  confirmStep = 0;
+  showModal('ล้างผลสอบ', 'ต้องการล้างข้อมูลผลสอบทั้งหมดใช่หรือไม่? (ขั้นที่ 1/2)', () => {
+    showModal('ยืนยันอีกครั้ง', 'การดำเนินการนี้ไม่สามารถย้อนกลับได้ ยืนยันลบผลสอบทั้งหมด?', async () => {
+      const snap = await db.collection('results').get();
+      const batch = db.batch();
+      snap.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      allResults = [];
+      renderDashboard();
+      alert('✅ ล้างข้อมูลผลสอบทั้งหมดแล้ว');
+    });
+  });
+}
+
+function confirmClearQuestions() {
+  showModal('ล้างข้อสอบ', 'ต้องการล้างข้อสอบทั้งหมดใช่หรือไม่? (ขั้นที่ 1/2)', () => {
+    showModal('ยืนยันอีกครั้ง', 'การดำเนินการนี้ไม่สามารถย้อนกลับได้ ยืนยันลบข้อสอบทั้งหมด?', async () => {
+      const snap = await db.collection('questions').get();
+      const batch = db.batch();
+      snap.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      questions = [];
+      renderQuestionsTable();
+      alert('✅ ล้างข้อสอบทั้งหมดแล้ว');
+    });
+  });
+}
+
+loadSettings();
+updateAdminWalls();
+</script>
+</body>
+</html>
